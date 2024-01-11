@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPA and CGPA Calculator</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0;
+      color: #333;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: linear-gradient(to right, #007bff, #0056b3);
+      color: #fff;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+       background: linear-gradient(to right, #0056b3, #007bff);
+    }
+
+    #semesterData {
+      margin-top: 20px;
+    }
+
+    #semesterData div {
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>GPA and CGPA Calculator</h1>
+
+  <form id="inputForm">
+    <label for="studentName">Student Name:</label>
+    <input type="text" id="studentName" required>
+
+    <label for="registerNumber">Register Number:</label>
+    <input type="text" id="registerNumber" required>
+
+    <label for="numSemesters">Number of Semesters:</label>
+    <input type="number" id="numSemesters" required>
+
+    <button type="button" onclick="collectSemesterData()">Enter Semester Data</button>
+
+    <div id="semesterData"></div>
+
+    <button type="button" onclick="calculateCGPA()">Calculate CGPA</button>
+  </form>
+
+  <div id="result"></div>
+  <script>
+    class Student {
+      constructor(name, registerNumber) {
+        this.name = name;
+        this.registerNumber = registerNumber;
+        this.semesters = [];
+      }
+
+      addSemester() {
+        const semester = [];
+        const numSubjects = parseInt(prompt("Enter the number of subjects for this semester:"));
+
+        for (let i = 0; i < numSubjects; i++) {
+          const subject = prompt(`Enter subject ${i + 1}:`);
+          const grade = parseFloat(prompt(`Enter grade for ${subject} (0-10):`));
+          const credits = parseFloat(prompt(`Enter credits for ${subject}:`));
+
+          semester.push({
+            subject,
+            grade,
+            credits
+          });
+        }
+
+        this.semesters.push(semester);
+      }
+
+      calculateGPA(semesterIndex) {
+        const semester = this.semesters[semesterIndex];
+
+        let totalCredits = 0;
+        let weightedSum = 0;
+
+        semester.forEach((subject) => {
+          totalCredits += subject.credits;
+          weightedSum += subject.grade * subject.credits;
+        });
+
+        if (totalCredits === 0) {
+          return 0.0; // To avoid division by zero
+        }
+
+        return weightedSum / totalCredits;
+      }
+
+      calculateCGPA() {
+        let totalGPA = 0;
+
+        this.semesters.forEach((semester) => {
+          totalGPA += this.calculateGPA(this.semesters.indexOf(semester));
+        });
+
+        if (this.semesters.length === 0) {
+          return {
+            cgpa: 0.0,
+            gpa: 0.0
+          }; // To avoid division by zero
+        }
+
+        const lastSemesterIndex = this.semesters.length - 1;
+        const gpa = this.calculateGPA(lastSemesterIndex);
+
+        return {
+          cgpa: totalGPA / this.semesters.length,
+          gpa
+        };
+      }
+    }
+
+    let student;
+
+    function collectSemesterData() {
+      if (!student) {
+        const studentName = document.getElementById('studentName').value;
+        const registerNumber = document.getElementById('registerNumber').value;
+        student = new Student(studentName, registerNumber);
+      }
+
+      const numSemesters = parseInt(document.getElementById('numSemesters').value);
+
+      for (let i = 0; i < numSemesters; i++) {
+        student.addSemester();
+      }
+
+      displaySemesterData();
+    }
+
+    function displaySemesterData() {
+      const semesterDataDiv = document.getElementById('semesterData');
+      semesterDataDiv.innerHTML = ''; // Clear previous data
+
+      student.semesters.forEach((semester, semesterIndex) => {
+        const semesterIndexDisplay = semesterIndex + 1;
+
+        const semesterDiv = document.createElement('div');
+        semesterDiv.innerHTML = `<h4>Semester ${semesterIndexDisplay}</h4>`;
+
+        semester.forEach((subject, subjectIndex) => {
+          const subjectIndexDisplay = subjectIndex + 1;
+
+          const subjectInfo = document.createElement('p');
+          subjectInfo.innerHTML = `Subject ${subjectIndexDisplay}: ${subject.subject} (Grade: ${subject.grade}, Credits: ${subject.credits})`;
+
+          semesterDiv.appendChild(subjectInfo);
+        });
+
+        const calculateGPAButton = document.createElement('button');
+        calculateGPAButton.innerText = 'Calculate GPA';
+        calculateGPAButton.onclick = function () {
+          const gpa = student.calculateGPA(semesterIndex).toFixed(2);
+          alert(`GPA for Semester ${semesterIndexDisplay}: ${gpa}`);
+        };
+
+        semesterDiv.appendChild(calculateGPAButton);
+
+        semesterDataDiv.appendChild(semesterDiv);
+      });
+    }
+
+    function calculateCGPA() {
+      if (student) {
+        const {
+          cgpa,
+          gpa
+        } = student.calculateCGPA();
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `<p>CGPA: ${cgpa.toFixed(2)}</p><p>GPA for the last semester: ${gpa.toFixed(2)}</p>`;
+      } else {
+        alert('Please enter student and semester data first.');
+      }
+    }
+  </script>
+</body>
+
+</html>
